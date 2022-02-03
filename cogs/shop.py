@@ -740,7 +740,8 @@ class Shop(Cog):
         interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "bbuy2" and i.user == ctx.author)
 
         if ctx.author.id == item['seller']:
-            q = await db.db[str(ctx.guild.id)].find_one_and_update({'_id': shop_id}, {'$pull': {chose: {'id': item['id']}}})
+            check = await db.fetch_user(ctx.guild.id, ctx.author.id)
+            q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id, 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
             exists = False
             for i in q[chose]:
                 if i['id'] == item['id']:
@@ -770,7 +771,7 @@ class Shop(Cog):
             user_money = await db.fetch_user(ctx.guild.id, ctx.author.id, money=1)
             user_money = user_money['money']
             if user_money >= item['sellcost']:
-                q = await db.db[str(ctx.guild.id)].find_one_and_update({'_id': shop_id}, {'$pull': {chose: {'id': item['id']}}})
+                q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id, 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
                 exists = False
                 for i in q[chose]:
                     if i['id'] == item['id']:

@@ -1,4 +1,4 @@
 echo off
-D:\documents\python\casinobotpy\casinoenv\Scripts\python.exe D:\documents\python\casinobotpy\main.py
+D:\documents\python\casinobothub2\casino2env\Scripts\python.exe D:\documents\python\casinobothub2\main.py
 
 pause

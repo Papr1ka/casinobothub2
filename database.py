@@ -18,11 +18,12 @@ logger.addHandler(MailHandler())
 
 class Database(AsyncIOMotorClient):
 
-    __database_name = "casino"
+    __database_name = "casino_sharded"
     __mongo_password = environ.get("MONGO_PASSWORD")
     __thread_size = 30
     __dbl_token = environ.get("DBLTOKEN")
     __site_url = "https://top.gg/api"
+    __shard_count = 100
 
     def __init__(self):
         pass
@@ -36,8 +37,10 @@ class Database(AsyncIOMotorClient):
             return result
         return wrapper
     
-    def connect(self):
+    def connect(self, database_name=None):
         logger.debug('connecting to cluster...')
+        if database_name is not None:
+            self.__database_name = database_name
         try:
             super().__init__(f"mongodb+srv://user:{self.__mongo_password}@cluster0.qbwbb.mongodb.net/{self.__database_name}?retryWrites=true&w=majority")
             logger.debug(self.server_info())
@@ -68,42 +71,19 @@ class Database(AsyncIOMotorClient):
         else:
             return False
     
+    async def get_shard(self, guild_id: int) -> str:
+        return f"shard{(guild_id >> 22) % self.__shard_count}"
+    
 
     @timeit
-    async def create_document(self, doc_name: str):
-        """
-        creating a  new document in __database_name database,
-        doc_name: discord.Guild.id: string - document name
-        return None
-        """
-        logger.debug(f"creating new document - {doc_name} in database {self.db.name}...")
+    async def remove_guild(self, guild_id: int):
+        logger.debug(f"removing all matches of the guild {guild_id}")
         try:
-            await self.db.create_collection(doc_name)
-            await self.db[doc_name].insert_one(get_shop())
-        except CollectionInvalid:
-            try:
-                await self.db[doc_name].insert_one(get_shop())
-            except Exception as E:
-                logger.error(f"can't create new document: {E}")
+            await self.db[await self.get_shard(guild_id)].delete_many({'guild_id': guild_id})
         except Exception as E:
-            logger.error(f"can't create new document: {E}")
+            logger.error(f"can't removing all matches of the guild {guild_id}: {E}")
         else:
-            logger.debug(f"{doc_name} created")
-    
-    @timeit
-    async def delete_document(self, doc_name: str):
-        """
-        deleting a document in __database_name database,
-        doc_name: discord.Guild.id: string - document name
-        return None
-        """
-        logger.debug(f"deleting document - {doc_name} in database {self.db.name}...")
-        try:
-            await self.db.drop_collection(doc_name)
-        except Exception as E:
-            logger.error(f"can't delete document: {E}")
-        else:
-            logger.debug(f"{doc_name} deleted")
+            logger.debug(f"removing all mathces of the guild {guild_id} complete")
     
     @Correct_ids
     @timeit
@@ -115,9 +95,9 @@ class Database(AsyncIOMotorClient):
         return Usermodel
         """
         logger.debug("inserting new user...")
-        user = UserModel(user_id)
+        user = UserModel(user_id, guild_id)
         try:
-            await self.db[guild_id.__str__()].insert_one(user.get_json())
+            await self.db[await self.get_shard(guild_id)].insert_one(user.get_json())
         except Exception as E:
             logger.error(f'cant insert user: {E}')
         else:
@@ -133,9 +113,9 @@ class Database(AsyncIOMotorClient):
         return shop
         """
         logger.debug("creating shop")
-        shop = get_shop()
+        shop = get_shop(guild_id)
         try:
-            await self.db[guild_id.__str__()].insert_one(shop)
+            await self.db[await self.get_shard(guild_id)].insert_one(shop)
         except Exception as E:
             logger.error(f'cant create shop: {E}')
         else:
@@ -155,7 +135,7 @@ class Database(AsyncIOMotorClient):
         """
         logger.debug("searching user")
         try:
-            user = await self.db[guild_id.__str__()].find_one({'_id': user_id}, projection)
+            user = await self.db[await self.get_shard(guild_id)].find_one({'_id': user_id, 'guild_id': guild_id}, projection)
         except Exception as E:
             logger.debug(f'cant fetch user: {E}')
         else:
@@ -190,10 +170,33 @@ class Database(AsyncIOMotorClient):
         logger.debug("updating user...")
         logger.debug(f"updating: {query}")
         try:
-            r = await self.db[guild_id.__str__()].update_one({'_id': user_id}, query)
+            r = await self.db[await self.get_shard(guild_id)].update_one({'_id': user_id, 'guild_id': guild_id}, query, upsert=True)
         except Exception as E:
             logger.error(f'updating user error: {E}')
         else:
+            logger.debug("updating user complete")
+    
+    
+    @Correct_ids
+    @timeit
+    async def update_new(self, guild_id, user_id, query):
+        """
+        updating Usermodel.json(): dict
+        guild_id: int
+        user_id: int
+        params: Usermodel.slots params
+        return None
+        """
+        logger.debug("updating user...")
+        logger.debug(f"updating: {query}")
+        try:
+            r = await self.db[await self.get_shard(guild_id)].find_one_and_update({'_id': user_id, 'guild_id': guild_id}, query)
+        except Exception as E:
+            logger.error(f'updating user error: {E}')
+        else:
+            if r is None:
+                await self.insert_user(guild_id, user_id)
+                await self.update_user(guild_id, user_id, query)
             logger.debug("updating user complete")
 
 
@@ -203,15 +206,19 @@ class Database(AsyncIOMotorClient):
             async with await self.start_session() as s:
                 async with s.start_transaction():
                     for i in query:
-                        coll = self.db[str(i[0])]
-                        await coll.update_one({'_id': i[1]}, i[2])
+                        coll = self.db[await self.get_shard(i[0])]
+                        r = await coll.find_one_and_update({'_id': i[1], 'guild_id': i[0]}, i[2], session=s)
+                        if r is None:
+                            user = UserModel(i[1], i[0])
+                            await coll.insert_one(user.get_json(), session=s)
+                            await coll.update_one({'_id': i[1], 'guild_id': i[0]}, i[2], session=s)
         except Exception as E:
             logger.error(E)
 
     @timeit
     async def update_guild(self, guild_id, filter, query):
         try:
-            await self.db[str(guild_id)].update_many(filter, query)
+            await self.db[await self.get_shard(guild_id)].update_many({'guild_id': guild_id, **filter}, query, upsert=True)
         except Exception as E:
             logger.error(E)
     
@@ -234,23 +241,13 @@ class Database(AsyncIOMotorClient):
         
         await gather(*threads)
 
-    
-
-    @timeit
-    async def insert_many(self, guild_id, users_id: list):
-        upd_users = []
-        for i in users_id:
-            upd_users.append(UserModel(i).get_json())
-
-        await self.db[str(guild_id)].insert_many(upd_users)
-
 
     @Correct_ids
     @timeit
     async def delete_user(self, guild_id, user_id):
         logger.debug("deleting user...")
         try:
-            await self.db[guild_id.__str__()].delete_one({'_id': user_id})
+            await self.db[await self.get_shard(guild_id)].delete_one({'_id': user_id, 'guild_id': guild_id})
         except Exception as E:
             logger.error(f"can't delete user: {E}")
         else:
@@ -258,3 +255,6 @@ class Database(AsyncIOMotorClient):
 
 db = Database()
 db.connect()
+
+db2 = Database()
+db2.connect('casino_sharded')

@@ -24,10 +24,11 @@ class UserModel():
         'components': {}
     }
     __BUSINESS = []
-    __slots__ = ['__user_id', '__money', '__exp', '__messages', '__level', '__custom', '__color', '__games', '__inventory', '__claim', '__finventory', '__business']
+    __slots__ = ['__user_id', '__money', '__exp', '__messages', '__level', '__custom', '__color', '__games', '__inventory', '__claim', '__finventory', '__business', '__guild_id']
     slots = [i[2:] for i in __slots__]
-    def __init__(self, user_id = None):
+    def __init__(self, user_id, guild_id):
         self.__user_id = user_id
+        self.__guild_id = guild_id
         self.__money = self.__MONEY
         self.__messages = self.__MESSAGES
         self.__custom = self.__CUSTOM
@@ -75,6 +76,7 @@ class UserModel():
     def get_json(self):
         return {
             '_id': self.__user_id,
+            'guild_id': self.__guild_id,
             'money': self.__money,
             'exp': self.__exp,
             'level': self.__level,

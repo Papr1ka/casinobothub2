@@ -120,7 +120,7 @@ class UserStats(Cog):
             custom = custom[:19]
         else:
             custom = UserModel.get_custom()
-        await db.update_user(ctx.guild.id, ctx.author.id, {'$set': {'custom': custom}})
+        await db.update_new(ctx.guild.id, ctx.author.id, {'$set': {'custom': custom}})
         title = f'Описание установлена на {custom}'
         embed = Embed(
             title=title,
@@ -174,7 +174,7 @@ class UserStats(Cog):
     async def give(self, ctx, member: Member, amount: int):
         await on_command(self.Bot.get_command('give'))
         if not member is None:
-            await db.update_user(member.guild.id, member.id, {'$inc': {'money': amount}})
+            await db.update_new(member.guild.id, member.id, {'$inc': {'money': amount}})
             embed = Embed(title=f"`{amount}$` переведено на счёт {member.nick if member.nick else member.name}")
             await ctx.send(embed=embed)
         else:
@@ -224,8 +224,7 @@ class UserStats(Cog):
     @guild_only()
     async def scoreboard(self, ctx):
         await on_command(self.Bot.get_command('scoreboard'))
-        guild_id = str(ctx.guild.id)
-        q = db.db[guild_id].aggregate([
+        q = db.db[await db.get_shard(ctx.guild.id)].aggregate([
             {'$match': {'_id': {'$ne': shop_id}}},
             {'$project': {'_id': 1, 'custom': 1, 'level': 1, 'exp': 1}},
         ])
@@ -252,8 +251,7 @@ class UserStats(Cog):
     @guild_only()
     async def godboard(self, ctx):
         await on_command(self.Bot.get_command('godboard'))
-        guild_id = str(ctx.guild.id)
-        q = db.db[guild_id].aggregate([
+        q = db.db[await db.get_shard(ctx.guild.id)].aggregate([
             {'$match': {'_id': {'$ne': shop_id}}},
             {'$project': {'_id': 1, 'custom': 1, 'money': 1}},
         ])

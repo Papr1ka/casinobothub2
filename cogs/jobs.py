@@ -230,6 +230,8 @@ class Jobs(Cog):
                                 b = BUSINESSES[int(interaction.custom_id[-1])]
                                 e, state = await B.logic(b, ctx.guild.id, ctx.author.id, fish.components, fish.cost, user_components)
                                 if state is SUCCESS:
+                                    for i in fish.components:
+                                        user_components[i] -= fish.components[i]
                                     o = True
                                     await interaction.edit_origin(embed=e, components=[Button(label="Рыбачить", style=ButtonStyle.blue, custom_id=c_id + "fish")])
                                 else:

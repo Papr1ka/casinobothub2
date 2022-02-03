@@ -6,8 +6,8 @@ from discord.ext.commands import AutoShardedBot as Robot
 from os import environ
 from logging import config, getLogger
 from discord.ext.commands.core import guild_only, is_owner
-
-from database import db
+from discord.errors import HTTPException
+from database import db, db2
 from handlers import MailHandler
 from discord_components import DiscordComponents
 from json import loads
@@ -33,6 +33,7 @@ Token = environ.get("TOKEN3")
 Bot = Robot(shard_count=1, command_prefix="=", intents=ints)
 DBot = DiscordComponents(Bot)
 bad_guilds = []
+bot_ides = []
 #data = Data()
 
 @Bot.event
@@ -44,17 +45,19 @@ async def on_ready():
 async def on_guild_join(guild):
     logger.info(f"bot joined guild: region - {guild.region} | name - {guild.name} | members - {guild.member_count}")
     can_connect = True
-    for i in guild.members:
-        if i.id == 883201346759704606:
+    for i in bot_ides:
+        try:
+            bot = await guild.fetch_member(i)
+        except HTTPException:
+            pass
+        else:
             can_connect = False
             break
-    if can_connect:
-        await db.create_document(str(guild.id))
-        await db.insert_many(guild.id, [member.id for member in guild.members])
-    else:
+        
+    if not can_connect:
         bad_guilds.append(guild.id)
         try:
-            e = Embed(title="На сервере не может быть 2 бота казино", color=Colour.red())
+            e = Embed(title="На сервере не может быть более 1 бота казино", color=Colour.red())
             channel = guild.system_channel
             if not channel is None:
                 await channel.send(embed=e)
@@ -75,16 +78,10 @@ async def on_guild_join(guild):
 @Bot.event
 async def on_guild_remove(guild):
     logger.info(f"bot removed from guild: region - {guild.region} | name - {guild.name} | members - {guild.member_count}")
-    print(bad_guilds)
     if guild.id not in bad_guilds:
-        await db.delete_document(str(guild.id))
+        await db.remove_guild(guild.id)
     else:
         bad_guilds.remove(guild.id)
-
-@Bot.event
-async def on_member_join(member: Member):
-    await db.insert_user(member.guild.id, member.id)
-
 
 @Bot.event
 async def on_member_remove(member: Member):
@@ -253,9 +250,43 @@ async def announcement(ctx, *, annonce):
 @Bot.command()
 @is_owner()
 async def add(ctx):
-    for guild in Bot.guilds:
-        await db.update_guild(guild.id, {'_id': {'$ne': -1}}, {'$set': {'business': []}})
+    for i in range(100):
+        await db.db[f'shard{i}'].create_index('guild_id')
     print('finished')
+
+@Bot.command()
+@is_owner()
+async def migrate(ctx):
+    for i in Bot.guilds:
+        documents = db.db[str(i.id)].find({})
+        docs = await documents.to_list(length=None)
+        
+        new_docs = []
+        
+        j = 0
+        for document in docs:
+            if document['_id'] != -1:
+                if document['exp'] == 0 and document['money'] == 1000 and document['level'] == 1 and document['games'] == 0 and document['messages'] == 0 and document['custom'] == "игрок" and document['inventory'] == [] and document['finventory'] == {
+        'rods': [1],
+        'ponds': [1],
+        'cage': [],
+        'components': {}
+    } and document['business'] == [] and document['claim'] == 0 and document['color'] == 'dark':
+                    pass
+                else:
+                    document['guild_id'] = i.id
+                    new_docs.append(document)
+            else:
+                document['guild_id'] = i.id
+                new_docs.append(document)
+            j += 1
+        shard = await db2.get_shard(i.id)
+        await db2.db[shard].insert_many(new_docs)
+        print(shard)
+    
+    
+    print('finished')
+
 
 
 def start():

@@ -24,7 +24,7 @@ class ErrorHandler(commands.Cog):
     def getDelay(self):
         return self.__delete_after
     
-    @commands.Cog.listener()
+    """@commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         logger.debug(f'on_command_error(), {error}')
         embed = self.__error_embed
@@ -79,7 +79,7 @@ class ErrorHandler(commands.Cog):
             logger.error(error)
             embed.title = 'Что-то пошло не так'
         if embed.title != "":
-            await ctx.send(embed=embed, delete_after=self.__delete_after)
+            await ctx.send(embed=embed, delete_after=self.__delete_after)"""
 
     @staticmethod
     async def on_error(channel, error):
