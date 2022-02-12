@@ -32,7 +32,7 @@ getLogger('PIL').setLevel('WARNING')
 ints = Intents(guilds=True, members=True, guild_messages=True, guild_reactions=True)
 
 Token = environ.get("TOKEN")
-Bot = Robot(shard_count=1, command_prefix="=", intents=ints)
+Bot = Robot(shard_count=8, command_prefix="=", intents=ints)
 DBot = DiscordComponents(Bot)
 bad_guilds = []
 bot_ides = [883201346759704606, 936355038245302292]
