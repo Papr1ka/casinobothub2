@@ -210,7 +210,9 @@ class Jobs(Cog):
                             interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "sell" or i.custom_id == c_id + "cage" or i.custom_id == c_id + "disa" or i.custom_id[:-1] == c_id + "business") and i.user == ctx.author, timeout=60)
                         except TimeoutError:
                             await db.update_user(ctx.guild.id, ctx.author.id, {'$push': {f'finventory.cage': await json_fish(fish)}})
-                            await interaction.edit_origin(embed=Embed(title="Улов отправлен в садок", color=Colour.dark_theme()), components=[])
+                            await ctx.reply(embed=Embed(title="Рыбак ушёл домой, садок остался полон", color=Colour.dark_theme()), components=[])
+                            o = False
+                            return
                         else:
                             print(interaction.custom_id)
                             if interaction.custom_id == c_id + "sell":

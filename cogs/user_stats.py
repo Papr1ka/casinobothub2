@@ -225,7 +225,7 @@ class UserStats(Cog):
     async def scoreboard(self, ctx):
         await on_command(self.Bot.get_command('scoreboard'))
         q = db.db[await db.get_shard(ctx.guild.id)].aggregate([
-            {'$match': {'_id': {'$ne': shop_id}}},
+            {'$match': {'_id': {'$ne': shop_id(ctx.guild.id)}, 'guild_id': ctx.guild.id}},
             {'$project': {'_id': 1, 'custom': 1, 'level': 1, 'exp': 1}},
         ])
       
@@ -252,7 +252,7 @@ class UserStats(Cog):
     async def godboard(self, ctx):
         await on_command(self.Bot.get_command('godboard'))
         q = db.db[await db.get_shard(ctx.guild.id)].aggregate([
-            {'$match': {'_id': {'$ne': shop_id}}},
+            {'$match': {'_id': {'$ne': shop_id(ctx.guild.id)}, 'guild_id': ctx.guild.id}},
             {'$project': {'_id': 1, 'custom': 1, 'money': 1}},
         ])
       

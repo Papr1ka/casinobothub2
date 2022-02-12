@@ -140,8 +140,12 @@ class Database(AsyncIOMotorClient):
             logger.debug(f'cant fetch user: {E}')
         else:
             if user is None:
-                user = await self.insert_user(guild_id, user_id)
-                return user.get_json()
+                if user_id == -guild_id:
+                    user = await self.create_shop(guild_id)
+                    return user
+                else:
+                    user = await self.insert_user(guild_id, user_id)
+                    return user.get_json()
             logger.debug("finded user")
             return user
     
@@ -195,7 +199,10 @@ class Database(AsyncIOMotorClient):
             logger.error(f'updating user error: {E}')
         else:
             if r is None:
-                await self.insert_user(guild_id, user_id)
+                if user_id == -guild_id:
+                    await self.create_shop(guild_id)
+                else:
+                    await self.insert_user(guild_id, user_id)
                 await self.update_user(guild_id, user_id, query)
             logger.debug("updating user complete")
 
@@ -254,7 +261,4 @@ class Database(AsyncIOMotorClient):
             logger.debug("deleting complete")
 
 db = Database()
-db.connect()
-
-db2 = Database()
-db2.connect('casino_sharded')
+db.connect('casino_sharded')

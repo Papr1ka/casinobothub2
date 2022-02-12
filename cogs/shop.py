@@ -42,7 +42,7 @@ class Shop(Cog):
     @guild_only()
     async def shop(self, ctx):
         await on_command(self.Bot.get_command('shop'))
-        shop = await db.fetch_user(ctx.guild.id, shop_id, items=1)
+        shop = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), items=1)
         shop = shop['items']
         embed = Embed(title='Магазин', color=Colour.dark_theme())
         
@@ -68,7 +68,7 @@ class Shop(Cog):
                 return
             
             
-            items = await db.fetch_user(ctx.guild.id, shop_id, items=1)
+            items = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), items=1)
             items = items['items']
             match = False
             for i in items:
@@ -208,12 +208,12 @@ class Shop(Cog):
 
         l = len(cage)
         if l == 0:
-            embed = Embed(title='Магазин', color=Colour.dark_theme())
+            embed = Embed(title='Садок', color=Colour.dark_theme())
             embed.description = "Вы ещё не отложили не одной рыбы в садок"
             await ctx.send(embed=embed)
             return
         
-        embeds = [Embed(title='Магазин', color=Colour.dark_theme()) for i in range(ceil(l / 5))]
+        embeds = [Embed(title='Садок', color=Colour.dark_theme()) for i in range(ceil(l / 5))]
         values = []
         
         for i in range(l):
@@ -277,7 +277,7 @@ class Shop(Cog):
                 else:
                     cost = int(message.content)
 
-            await db.update_user(ctx.guild.id, shop_id, {'$push': {'ah': {
+            await db.update_new(ctx.guild.id, shop_id(ctx.guild.id), {'$push': {'ah': {
                 'name': item['name'],
                 'cost': item['cost'],
                 'description': item['description'],
@@ -441,7 +441,7 @@ class Shop(Cog):
         
         while name is False:
             item_opts = await get(item_opts, 'name', 'content')
-            items = await db.fetch_user(ctx.guild.id, shop_id, items=1)
+            items = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), items=1)
             items = items['items']
             unicle = True
             for i in items:
@@ -494,7 +494,7 @@ class Shop(Cog):
         
         item_opts['roles'] = n
         
-        await db.update_user(ctx.guild.id, shop_id, {'$push': {'items': item_opts}})
+        await db.update_user(ctx.guild.id, shop_id(ctx.guild.id), {'$push': {'items': item_opts}})
     
 
     @command(
@@ -509,7 +509,7 @@ class Shop(Cog):
         if not name:
             embed = Embed(title='Товар не найден', color=Colour.dark_theme())
         else:
-            items = await db.fetch_user(ctx.guild.id, shop_id, items=1)
+            items = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), items=1)
             items = items['items']
             match = False
             for i in items:
@@ -518,7 +518,7 @@ class Shop(Cog):
                     break
             if match:
                 embed = Embed(title='Товар удалён', color=Colour.dark_theme())
-                await db.update_user(ctx.guild.id, shop_id, {'$pull': {'items': {'name': name}}})
+                await db.update_user(ctx.guild.id, shop_id(ctx.guild.id), {'$pull': {'items': {'name': name}}})
             else:
                 embed = Embed(title='Товар не найден', color=Colour.dark_theme())
         await ctx.send(embed=embed)
@@ -536,23 +536,23 @@ class Shop(Cog):
         await on_command(self.Bot.get_command('reset'))
         embed = Embed(color=Colour.dark_theme())
         if object == 'shop':
-            await db.delete_user(ctx.guild.id, shop_id)
+            await db.delete_user(ctx.guild.id, shop_id(ctx.guild.id))
             await db.create_shop(ctx.guild.id)
             embed.title = 'Магазин обнулён'
         elif object == 'exp':
-            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id}}, {'$set': {'exp': 0, 'level': 1}})
+            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id(ctx.guild.id)}}, {'$set': {'exp': 0, 'level': 1}})
             embed.title = 'уровни пользователей обнулены'
         elif object == 'money':
-            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id}},  {'$set': {'money': 1000}})
+            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id(ctx.guild.id)}},  {'$set': {'money': 1000}})
             embed.title = 'деньги пользователей обнулены'
         elif object == 'messages':
-            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id}}, {'$set': {'messages': 0}})
+            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id(ctx.guild.id)}}, {'$set': {'messages': 0}})
             embed.title = 'сообщения пользователей обнулены'
         elif object == 'games':
-            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id}}, {'$set': {'games': 0}})
+            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id(ctx.guild.id)}}, {'$set': {'games': 0}})
             embed.title = 'игры пользователей обнулены'
         elif object == 'user':
-            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id}}, {'$set': {'exp': 0, 'level': 1, 'money': 1000, 'messages': 0, 'games': 0}})
+            await db.update_guild(ctx.guild.id, {'_id': {'$ne': shop_id(ctx.guild.id)}}, {'$set': {'exp': 0, 'level': 1, 'money': 1000, 'messages': 0, 'games': 0}})
             embed.title = 'данные пользователей обнулены'
         
         else:
@@ -681,11 +681,11 @@ class Shop(Cog):
         
         interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "ffishs" or i.custom_id == c_id + "rrodss") and i.user == ctx.author)
         if interaction.custom_id == c_id + "ffishs":
-            shop = await db.fetch_user(ctx.guild.id, shop_id, ah=1)
+            shop = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), ah=1)
             shop = shop['ah']
             chose = "ah"
         else:
-            shop = await db.fetch_user(ctx.guild.id, shop_id, rods=1)
+            shop = await db.fetch_user(ctx.guild.id, shop_id(ctx.guild.id), rods=1)
             shop = shop['rods']
             chose = "rods"
 
@@ -741,7 +741,7 @@ class Shop(Cog):
 
         if ctx.author.id == item['seller']:
             check = await db.fetch_user(ctx.guild.id, ctx.author.id)
-            q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id, 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
+            q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id(ctx.guild.id), 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
             exists = False
             for i in q[chose]:
                 if i['id'] == item['id']:
@@ -771,7 +771,7 @@ class Shop(Cog):
             user_money = await db.fetch_user(ctx.guild.id, ctx.author.id, money=1)
             user_money = user_money['money']
             if user_money >= item['sellcost']:
-                q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id, 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
+                q = await db.db[await db.get_shard(ctx.guild.id)].find_one_and_update({'_id': shop_id(ctx.guild.id), 'guild_id': ctx.guild.id}, {'$pull': {chose: {'id': item['id']}}})
                 exists = False
                 for i in q[chose]:
                     if i['id'] == item['id']:
@@ -869,7 +869,7 @@ class Shop(Cog):
                     await message.reply(embed=embed)
                     return
                 
-                await db.update_user(ctx.guild.id, shop_id, {'$push': {'rods': {
+                await db.update_new(ctx.guild.id, shop_id(ctx.guild.id), {'$push': {'rods': {
                     'name': item.name,
                     'cost': item.cost,
                     'description': item.description,

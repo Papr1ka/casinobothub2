@@ -1,5 +1,6 @@
 from asyncio import sleep
 from math import ceil
+from pprint import pprint
 from discord import Member, Embed, Intents
 from discord.colour import Colour
 from discord.ext.commands import AutoShardedBot as Robot
@@ -7,12 +8,13 @@ from os import environ
 from logging import config, getLogger
 from discord.ext.commands.core import guild_only, is_owner
 from discord.errors import HTTPException
-from database import db, db2
+from database import db
 from handlers import MailHandler
-from discord_components import DiscordComponents
+from discord_components import DiscordComponents, Button, ButtonStyle
 from json import loads
 from time import time
 from models.fishing import wshop
+from models.shop import shop_id
 #from models.data import Data
 
 
@@ -29,11 +31,11 @@ getLogger('PIL').setLevel('WARNING')
 
 ints = Intents(guilds=True, members=True, guild_messages=True, guild_reactions=True)
 
-Token = environ.get("TOKEN3")
+Token = environ.get("TOKEN")
 Bot = Robot(shard_count=1, command_prefix="=", intents=ints)
 DBot = DiscordComponents(Bot)
 bad_guilds = []
-bot_ides = []
+bot_ides = [883201346759704606, 936355038245302292]
 #data = Data()
 
 @Bot.event
@@ -46,13 +48,14 @@ async def on_guild_join(guild):
     logger.info(f"bot joined guild: region - {guild.region} | name - {guild.name} | members - {guild.member_count}")
     can_connect = True
     for i in bot_ides:
-        try:
-            bot = await guild.fetch_member(i)
-        except HTTPException:
-            pass
-        else:
-            can_connect = False
-            break
+        if i != Bot.user.id:
+            try:
+                bot = await guild.fetch_member(i)
+            except HTTPException:
+                pass
+            else:
+                can_connect = False
+                break
         
     if not can_connect:
         bad_guilds.append(guild.id)
@@ -74,6 +77,8 @@ async def on_guild_join(guild):
                 disc = True
         
         logger.info(f"bot removed from guild, found casino: region - {guild.region} | name - {guild.name} | members - {guild.member_count}")
+    else:
+        await db.create_shop(guild.id)
 
 @Bot.event
 async def on_guild_remove(guild):
@@ -122,6 +127,7 @@ async def help(ctx, module_command=None):
                 embed.add_field(name='Предложить идею', value='`=offer [идея]`', inline=False)
                 embed.add_field(name='Инвентарь', value='`=inventory`', inline=False)
                 embed.add_field(name='Голосовать', value='`=vote`', inline=False)
+                embed.add_field(name='Сайт', value='`=url`', inline=False)
             elif module_command == 'store':
                 embed.title=f"{Bot.user.name} shop команды"
                 embed.add_field(name='Магазин', value='`=shop`', inline=False)
@@ -254,12 +260,22 @@ async def add(ctx):
         await db.db[f'shard{i}'].create_index('guild_id')
     print('finished')
 
-@Bot.command()
+@Bot.command(
+    help="Постоянная ссылка на наш сайт",
+    usage="`=url`"
+)
+async def url(ctx):
+    embed = Embed(title="Смотрите команды и следите за новостями на нашем сайте!", color=Colour.dark_theme())
+    components = [Button(label='Наш сайт', url='https://casino-web.herokuapp.com/casino/', style=ButtonStyle.URL)]
+    await ctx.send(embed=embed, components=components)
+
+"""@Bot.command()
 @is_owner()
 async def migrate(ctx):
-    for i in Bot.guilds:
-        documents = db.db[str(i.id)].find({})
+    for i in [453565320708489226]:
+        documents = db.db[str(i)].find({})
         docs = await documents.to_list(length=None)
+        pprint(docs)
         
         new_docs = []
         
@@ -274,30 +290,32 @@ async def migrate(ctx):
     } and document['business'] == [] and document['claim'] == 0 and document['color'] == 'dark':
                     pass
                 else:
-                    document['guild_id'] = i.id
+                    document['guild_id'] = i
                     new_docs.append(document)
             else:
-                document['guild_id'] = i.id
+                document['guild_id'] = i
+                document['_id'] = shop_id(i)
                 new_docs.append(document)
             j += 1
-        shard = await db2.get_shard(i.id)
-        await db2.db[shard].insert_many(new_docs)
+        shard = await db2.get_shard(i)
+        if new_docs:
+            await db2.db[shard].insert_many(new_docs)
         print(shard)
     
     
-    print('finished')
+    print('finished')"""
 
 
 
 def start():
-    logger.debug("loading extensions...")
+    logger.info("loading extensions...")
     Bot.load_extension("cogs.casino")
     Bot.load_extension("cogs.error_handler")
     Bot.load_extension("cogs.leveling")
     Bot.load_extension("cogs.user_stats")
     Bot.load_extension("cogs.jobs")
     Bot.load_extension("cogs.shop")
-    logger.debug("loading complete")
+    logger.info("loading complete")
     Bot.run(Token)
 
 
