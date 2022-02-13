@@ -1120,3 +1120,25 @@ __main__ : on_ready : 43 : 12/02/2022 02:36:55 PM : INFO : bot is started
 __main__ : on_guild_join : 48 : 12/02/2022 02:37:05 PM : INFO : bot joined guild: region - deprecated | name - 10 IT | members - 29
 database : create_shop : 120 : 12/02/2022 02:37:05 PM : ERROR : cant create shop: E11000 duplicate key error collection: casino_sharded.shard90 index: _id_ dup key: { _id: -750791175606239397 }, full error: {'index': 0, 'code': 11000, 'keyPattern': {'_id': 1}, 'keyValue': {'_id': -750791175606239397}, 'errmsg': 'E11000 duplicate key error collection: casino_sharded.shard90 index: _id_ dup key: { _id: -750791175606239397 }'}
 main : on_command : 175 : 12/02/2022 02:37:53 PM : INFO : stats
+database : connect : 52 : 12/02/2022 04:26:00 PM : INFO : connected to database: casino_sharded
+__main__ : <module> : 24 : 12/02/2022 04:26:00 PM : INFO : starting...
+__main__ : start : 311 : 12/02/2022 04:26:00 PM : INFO : loading extensions...
+main : <module> : 24 : 12/02/2022 04:26:00 PM : INFO : starting...
+cogs.casino : __init__ : 152 : 12/02/2022 04:26:00 PM : INFO : cogs.casino Cog has initialized
+cogs.error_handler : __init__ : 22 : 12/02/2022 04:26:00 PM : INFO : cogs.error_handler Cog has initialized
+cogs.leveling : __init__ : 47 : 12/02/2022 04:26:00 PM : INFO : cogs.leveling Cog has initialized
+cogs.user_stats : __init__ : 34 : 12/02/2022 04:26:00 PM : INFO : cogs.user_stats Cog has initialized
+cogs.shop : __init__ : 36 : 12/02/2022 04:26:00 PM : INFO : cogs.shop Cog has initialized
+__main__ : start : 318 : 12/02/2022 04:26:00 PM : INFO : loading complete
+__main__ : on_ready : 43 : 12/02/2022 04:26:03 PM : INFO : bot is started
+database : connect : 52 : 12/02/2022 04:26:19 PM : INFO : connected to database: casino_sharded
+__main__ : <module> : 24 : 12/02/2022 04:26:19 PM : INFO : starting...
+__main__ : start : 311 : 12/02/2022 04:26:19 PM : INFO : loading extensions...
+main : <module> : 24 : 12/02/2022 04:26:19 PM : INFO : starting...
+cogs.casino : __init__ : 152 : 12/02/2022 04:26:19 PM : INFO : cogs.casino Cog has initialized
+cogs.error_handler : __init__ : 22 : 12/02/2022 04:26:19 PM : INFO : cogs.error_handler Cog has initialized
+cogs.leveling : __init__ : 47 : 12/02/2022 04:26:19 PM : INFO : cogs.leveling Cog has initialized
+cogs.user_stats : __init__ : 34 : 12/02/2022 04:26:19 PM : INFO : cogs.user_stats Cog has initialized
+cogs.shop : __init__ : 36 : 12/02/2022 04:26:19 PM : INFO : cogs.shop Cog has initialized
+__main__ : start : 318 : 12/02/2022 04:26:19 PM : INFO : loading complete
+__main__ : on_ready : 43 : 12/02/2022 04:26:22 PM : INFO : bot is started
