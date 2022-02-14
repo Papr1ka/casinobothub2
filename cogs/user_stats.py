@@ -174,8 +174,11 @@ class UserStats(Cog):
     async def give(self, ctx, member: Member, amount: int):
         await on_command(self.Bot.get_command('give'))
         if not member is None:
-            await db.update_new(member.guild.id, member.id, {'$inc': {'money': amount}})
-            embed = Embed(title=f"`{amount}$` переведено на счёт {member.nick if member.nick else member.name}")
+            if amount < (2 ** 64):
+                await db.update_new(member.guild.id, member.id, {'$inc': {'money': amount}})
+                embed = Embed(title=f"`{amount}$` переведено на счёт {member.nick if member.nick else member.name}")
+            else:
+                embed = Embed(title=f"У банка нет таких средств, попробуйте быть поскромнее")
             await ctx.send(embed=embed)
         else:
             raise InvalidUser('Некорректный адресат')
