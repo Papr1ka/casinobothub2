@@ -81,7 +81,7 @@ class Jobs(Cog):
         p = [ponds[i] for i in finventory['ponds']]
         r = [all_rods[i] for i in set(finventory['rods'])]
         
-        t = time() // 3600 % 24
+        t = round(time() // 3600 % 24)
         temp = self.temperature[t]
         weather = self.weather[t]
         footer = f"🌡 Температура: {temp} ℃ | Погода: {weather}"
