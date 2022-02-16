@@ -22,7 +22,7 @@ from models.fishing import *
 from models.fishing import components as fish_components
 from models.shop import shop_id
 from models.business import B
-from discord_components import DiscordComponents, component
+from discord_components import DiscordComponents, component, SelectOption
 
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)
@@ -220,10 +220,35 @@ class Shop(Cog):
             embeds[i // 5].add_field(name = "💸 " + str(cage[i]['cost']) + '$   |  ' + cage[i]['name'], value=cage[i]['description'], inline=False)
             values.append(i)
             
-        p = Paginator(DiscordComponents(self.Bot), ctx.channel.send, embeds, author_id=ctx.author.id, id=c_id + "pagi3", values=values, forse=5, timeout=300)
+        p = Paginator(DiscordComponents(self.Bot), ctx.channel.send, embeds, author_id=ctx.author.id, id=c_id + "pagi3", values=values, forse=5, timeout=300, select_opts=[SelectOption(label='Продать всё', value="Продать всё"), SelectOption(label='Разобрать всё', value="Разобрать всё")])
         response, inter, msg = await p.send()
         if response == "Отменить" or response is None:
             await msg.delete()
+            return
+        elif response == "Продать всё":
+            user_cage = await db.fetch_user(ctx.guild.id, ctx.author.id, finventory=1)
+            user_cage = user_cage['finventory']['cage']
+            cage_cost = sum([i['cost'] for i in user_cage])
+            await db.update_user(ctx.guild.id, ctx.author.id, {'$inc': {'money': cage_cost}, '$set': {'finventory.cage': []}})
+            embed = Embed(title=f"Вы продали весь свой улов на сумму `{cage_cost}$`")
+            await inter.edit_origin(embed=embed, components=[])
+            return
+        elif response == "Разобрать всё":
+            user_cage = await db.fetch_user(ctx.guild.id, ctx.author.id, finventory=1)
+            user_cage = user_cage['finventory']['cage']
+            cage_cost = sum([i['cost'] for i in user_cage])
+            
+            user_components = {str(i): 0 for i in range(1, 9)}
+            for fish in user_cage:
+                for i in fish['components']:
+                    user_components[i] += fish['components'][i]
+            
+            q = {f'finventory.components.{i}': user_components[i] for i in user_components}
+            
+            await db.update_user(ctx.guild.id, ctx.author.id, {'$inc': q, '$set': {'finventory.cage': []}})
+            pl = ', '.join([f'{fish_components[i].re} - `{user_components[i]}`' for i in user_components if user_components[i] != 0])
+            embed = Embed(title=f"Вы разобрали весь свой улов и получили: {pl}")
+            await inter.edit_origin(embed=embed, components=[])
             return
         response = int(response)
         item = ides[response]

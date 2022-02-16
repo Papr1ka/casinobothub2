@@ -5,7 +5,6 @@ from discord_components import (
     Button,
     ButtonStyle,
     Interaction,
-    ActionRow,
     Select,
     SelectOption,
 )
@@ -28,6 +27,7 @@ class Paginator():
         id: int,
         forse: int,
         timeout: Union[int, None]=None,
+        select_opts = []
             ) -> None:
         """Пагинатор Эмбедов на кнопках
 
@@ -53,6 +53,7 @@ class Paginator():
         self.__id = str(id)
         self.forse = forse
         self.check = lambda i: i.user.id == self.__author_id and i.custom_id.startswith(self.__id)
+        self.select_opts = select_opts
 
 
     async def get_current(self):
@@ -72,7 +73,7 @@ class Paginator():
         ], [
             Select(
             placeholder='Выберите товар',
-            options=[*[SelectOption(label=i['label'], value=i['value']) for i in current], SelectOption(label="Отменить", value='Отменить')]
+            options=[*[SelectOption(label=i['label'], value=i['value']) for i in current], SelectOption(label="Отменить", value='Отменить'), *[i for i in self.select_opts]]
             ,custom_id=self.__id + "s")
         ]]
 
