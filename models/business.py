@@ -1,3 +1,7 @@
+"""
+Файл, описывающий инструменты для поддержки работы бизнеса при рыбалке
+"""
+
 from collections import namedtuple
 from typing import Dict, List
 from models.fishing import fish
@@ -11,12 +15,21 @@ config.fileConfig('./logging.ini', disable_existing_loggers=False)
 logger = getLogger(__name__)
 logger.addHandler(MailHandler())
 
-BUSINESS = namedtuple("BUSINESS", ['id', 'action_name', 'name', 'description', 'cost', 'stock'])
+# Тип бизнеса
+BUSINESS = namedtuple("BUSINESS", [
+    'id', # айди бизнеса, int
+    'action_name', # название кнопки взаимодействия, str
+    'name', # название бизнеса
+    'description', # описание бизнеса
+    'cost', # стоимость бизнеса в компонентах, List[Tuple(component, int)] - список кортежей, где 1-й элемент - компонент, второй - его количество
+    'stock' #
+])
 
 FISH_PRESERVES_FACTORY: BUSINESS = BUSINESS(0, "Консервировать", 'Завод рыбных консервов', 'Перерабатывайте рыбу за её стоимость в компонентах и продавайте её за `x 2.5` от стоимости', [(components['1'], 1000), (components['2'], 1000),(components['3'], 1000), (components['4'], 1000), (components['5'], 1000), (components['6'], 1000), (components['7'], 1000), (components['8'], 1000)], False)
 FISHING_SHOP: BUSINESS = BUSINESS(1, "На прилавок", 'Рыболовный магазин', 'Продайте рыбу в своём магазине за `x 1.1 от стоимости`', [(components['1'], 50), (components['2'], 50),(components['3'], 50), (components['4'], 50), (components['5'], 50), (components['6'], 50), (components['7'], 50), (components['8'], 50)], True)
 RED_BOOK_RESELL: BUSINESS = BUSINESS(2, "Продать экологам", "Контракт с экологами", "Заключите контракт с экологами и продавайте им самых редких рыб [Лосось, Золотая, Язь] за `x 2` от стоимости, может сочетаться с рыболовным магазином", [(components['1'], 200), (components['2'], 200),(components['3'], 200), (components['4'], 200), (components['5'], 200), (components['6'], 200), (components['7'], 200), (components['8'], 200)], True)
 
+# Все существующие бизнесы
 BUSINESSES: Dict[int, BUSINESS] = {
     0 : FISH_PRESERVES_FACTORY,
     1 : FISHING_SHOP,

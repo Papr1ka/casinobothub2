@@ -14,9 +14,7 @@ class NotEnoughMoney(errors.CommandError):
 
 class NotSelectedBetType(errors.CommandError):
     """
-    The exception was thrown
-    when the user does not select
-    the type of bet.
+    Выбрасывается, когда пользователь не выбрал тип ставки в казино
     """
     def __init__(self, message, *args):
         self.message = message
@@ -24,7 +22,7 @@ class NotSelectedBetType(errors.CommandError):
 
 class BadGamesession(errors.CommandError):
     """
-    called when the game session has expired
+    Выбрасывается, когда пользователь обращается к устаревшей сессии в казино
     """
     def __init__(self, message, *args):
         self.message = message
@@ -32,7 +30,7 @@ class BadGamesession(errors.CommandError):
 
 class TooManyGames(errors.CommandError):
     """
-    called when the game limit has been reached
+    Выбрасывается, когда пользователь превышает лимит одновременных игр
     """
     def __init__(self, message, *args):
         self.message = message
@@ -40,8 +38,7 @@ class TooManyGames(errors.CommandError):
 
 class InvalidUser(errors.CommandError):
     """
-    The exception was thrown
-    when the user does not selected
+    Выбрасывается, когда пользователь не выбран
     """
     def __init__(self, message, *args):
         self.message = message
@@ -49,8 +46,7 @@ class InvalidUser(errors.CommandError):
 
 class CommandCanceled(errors.CommandError):
     """
-    The exception was thrown
-    when the command gets timeout error or cancelled
+    Выбрасывается, когда время действия команды истекло или команда была отменена
     """
     def __init__(self, message, *args):
         self.message = message

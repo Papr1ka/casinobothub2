@@ -1,3 +1,7 @@
+"""
+Файл для учёта статистики вызова команд за промежуток времени, на данный момент не работает
+"""
+
 from asyncio import sleep
 import time
 from database import db
