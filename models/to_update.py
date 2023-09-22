@@ -1,3 +1,7 @@
+"""
+Файл, описывающий класс для учёта ежеминутного количества сообщений, отправляемых всеми пользователями
+"""
+
 from handlers import MailHandler
 from logging import config, getLogger
 
@@ -7,8 +11,12 @@ logger.addHandler(MailHandler())
 
 
 class To_update():
+    """
+    Класс для учёта количества сообщений, отправленных пользователями в течении минутыы
+    """
 
     def __table(self):
+        # Асинхронная функция, хранящая словарь, где ключ - id пользователя, значение - количество отправленных им сообщений
         users = {}
         while True:
             query = yield
@@ -24,10 +32,22 @@ class To_update():
         logger.debug('to_update initialized')
 
 
-    def add(self, user):
+    def add(self, user: int):
+        """
+        Инкрементирует количество сообщений, отправленных пользователем
+        
+        Аргументы:
+            user: int - айди пользователя
+        """
         return self.__data.send(('add', user))
     
     def get(self):
+        """
+        Метод для получения словаря всех пользователей, отправивших сообщения в течение минуты
+
+        Возвращает:
+            Dict[user_id: int, messages: int] - user_id - айди пользователя, messages - количество отправленных сообщений
+        """
         r = self.__data.send(('get', ))
         self.__data.send(None)
         return r

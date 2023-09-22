@@ -1,19 +1,17 @@
-from hashlib import new
-from random import choices, randint
-from socket import timeout
 from discord.ext.commands import Cog, command, has_permissions, guild_only
 from discord import Embed
 from discord.colour import Colour
-from math import ceil
 from discord.ext.commands.cooldowns import BucketType
-
 from discord.ext.commands.core import max_concurrency
+from logging import config, getLogger
+from math import ceil
+from random import choices, randint
 
 from handlers import MailHandler
-from logging import config, getLogger
 
 from cogs.user_stats import transaction
 from database import db
+from discord_components import DiscordComponents, component, SelectOption
 from main import on_command
 from models.business import BUSINESSES
 from models.paginator import Paginator
@@ -22,7 +20,6 @@ from models.fishing import *
 from models.fishing import components as fish_components
 from models.shop import shop_id
 from models.business import B
-from discord_components import DiscordComponents, component, SelectOption
 
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)

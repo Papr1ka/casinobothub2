@@ -1,10 +1,12 @@
+"""
+Файл описывает кастомные ошибки бота, связанные с действиями пользователей
+"""
+
 from discord.ext.commands import errors
 
 class NotEnoughMoney(errors.CommandError):
     """
-    The exception that is thrown
-    when the user does not have enough
-    funds to complete the transaction.
+    Выбрасывается, когда у пользователя недостаточно денег для совершения операции
     """
     def __init__(self, message, *args):
         self.message = message

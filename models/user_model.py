@@ -1,3 +1,7 @@
+"""
+Файл, описывающий класс для создания пользователя и пересчёта чистого опыта в уровни
+"""
+
 from handlers import MailHandler
 from logging import config, getLogger
 
@@ -7,25 +11,46 @@ logger.addHandler(MailHandler())
 
 
 class UserModel():
+    """
+    Класс модели пользователя, используется для создании записи в базе данных о новом пользователе
+    """
+    # Поля по умолчанию
+    # Деньги
     __MONEY = 1000
+    # Опыт
     __EXP = 0
+    # Уровень
     __LEVEL = 1
+    # Сообщения
     __MESSAGES = 0
+    # Функция получения количества опыта, необходимого для повышения уровня
     __LEVEL_COST_FORMULA = lambda level: level * (50 + level * 3)
+    # Описание в карточке (status) по умолчанию
     __CUSTOM = 'игрок'
+    # Количество игр в казино
     __GAMES = 0
-    __COLOR = 'dark' #dark or light
+    # Значение темы по умолчанию (dark | light)
+    __COLOR = 'dark'
+    # Список неактивированных предметов из магазина
     __INVENTORY = []
+    # Последнее время получения награды за голосование
     __CLAIM = 0
+    # Инвентарь рыбака
     __FINVENTORY = {
+        # Удочки, которые есть у пользователя
         'rods': [1],
+        # Водоёмы, которые приобрёл пользователь
         'ponds': [1],
+        # Рыба в садке
         'cage': [],
+        # Компоненты для создания удочек
         'components': {}
     }
+    # Приобретённые виды бизнеса у пользователя
     __BUSINESS = []
     __slots__ = ['__user_id', '__money', '__exp', '__messages', '__level', '__custom', '__color', '__games', '__inventory', '__claim', '__finventory', '__business', '__guild_id']
     slots = [i[2:] for i in __slots__]
+
     def __init__(self, user_id, guild_id):
         self.__user_id = user_id
         self.__guild_id = guild_id
@@ -47,13 +72,12 @@ class UserModel():
     @classmethod
     def set_cls_field(cls, **params):
         """
-        set start params
-        params:
-        MONEY: User start money at guild, default=1000
-        EXP: User start experience at guild, default=0
-        VOICE: User start time at guild voice channels, default=0
-        Messages: User start messages at guild text channels, default=0
-        LEVEL_FORMULA: level cost function; args=(level)
+        Изменение значений по умолчанию, которые будут использованы при создании нового пользователя
+
+        Метод изменит значения до завершения программы, на данный момент нигде не используется
+
+        Аргументы:
+            params: dict - Словарь, где ключ - название поля по умолчанию, значение - значение по умолчанию
         """
         logger.info(f'new UserModel start params: {params}')
         cls.__MONEY = params.pop('MONEY', 1000)
@@ -74,6 +98,9 @@ class UserModel():
         cls.__LEVEL_COST_FORMULA = params.pop('LEVEL_COST_FORMULA', lambda level: level * (50 + level * 3))
     
     def get_json(self):
+        """
+        Метод для получения информации о пользователе в формате json
+        """
         return {
             '_id': self.__user_id,
             'guild_id': self.__guild_id,
@@ -91,9 +118,21 @@ class UserModel():
         }
     
     @staticmethod
-    def exp_to_level(exp, level):
+    def exp_to_level(exp: int, level: int):
         """
-        return user real exp, level
+        Метод для перевода опыта и текущего уровня пользователя
+        в максимально возможный уровень для текущего опыта и остаточный опыт
+        
+        Аргументы:
+            exp: int - текущий опыт пользователя
+            level: int - текущий уровень пользователя
+
+        Возвращает:
+            (exp: int, level: int, exp_to_next_level: int)
+            exp - остаточное количество опыта
+            level - новый уровень пользователя
+            ext_to_next_level - количество опыта, необходимое для перехода на следующий уровень
+            (абсолютная величина (см. комментарий к only_exp_tp_level))
         """
         while exp >= UserModel.__LEVEL_COST_FORMULA(level):
             exp -= UserModel.__LEVEL_COST_FORMULA(level)
@@ -101,5 +140,17 @@ class UserModel():
         return exp, level, UserModel.__LEVEL_COST_FORMULA(level)
     
     @staticmethod
-    def only_exp_to_level(level):
+    def only_exp_to_level(level: int):
+        """
+        Метод для получения количества опыта, необходимого для перехода на следующий уровень
+        (Абсолютная величина перехода)
+        Чтобы получить отностельную, нужно дополнительно
+        вне функции отнять от результата работы этой функции текущее количество опыта пользователя
+
+        Аргументы:
+            level: int - текущий уровень пользователя
+
+        Возвращает:
+            exp_to_next_level: int - количество опыта, необходимого для перехода на следуюший уровень
+        """
         return UserModel.__LEVEL_COST_FORMULA(level)
