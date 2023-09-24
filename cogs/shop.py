@@ -11,7 +11,8 @@ from handlers import MailHandler
 
 from cogs.user_stats import transaction
 from database import db
-from discord_components import DiscordComponents, component, SelectOption
+from discord_components import DiscordComponents, SelectOption
+from discord_components.component import Button, ButtonStyle
 from main import on_command
 from models.business import BUSINESSES
 from models.paginator import Paginator
@@ -19,7 +20,7 @@ from models.errors import CommandCanceled
 from models.fishing import *
 from models.fishing import components as fish_components
 from models.shop import shop_id
-from models.business import B
+from models.business import B, SUCCESS
 
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)
@@ -81,7 +82,7 @@ class Shop(Cog):
                     embed.add_field(name='Роли', value='нет', inline=False)
                 else:
                     embed.add_field(name='Роли', value=' '.join([role.mention for role in roles]), inline=False)
-                await inter.edit_origin(embed=embed, components=[component.Button(style=component.ButtonStyle.blue, label="Купить", custom_id=c_id + "buy_")])
+                await inter.edit_origin(embed=embed, components=[Button(style=ButtonStyle.blue, label="Купить", custom_id=c_id + "buy_")])
                 interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "buy_" and i.user == ctx.author)
 
                 cost = i['cost']
@@ -115,8 +116,8 @@ class Shop(Cog):
         c_id = str(ctx.message.id)
         embed = Embed(title='Магазин', color=Colour.dark_theme())
         
-        components = [[component.Button(label='Удочки', style=component.ButtonStyle.blue, custom_id=c_id + "rod"),
-                       component.Button(label='Водоёмы', style=component.ButtonStyle.blue, custom_id=c_id + "pon")]]
+        components = [[Button(label='Удочки', style=ButtonStyle.blue, custom_id=c_id + "rod"),
+                       Button(label='Водоёмы', style=ButtonStyle.blue, custom_id=c_id + "pon")]]
         op = await ctx.send(embed=embed, components=components)
         
         interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "rod" or i.custom_id == c_id + "pon") and i.user == ctx.author)
@@ -158,7 +159,7 @@ class Shop(Cog):
         if chose == 'rods':
             embed.add_field(name="Модификаторы", value=f"x {item.modifiers['x']} к качеству рыбы\nТочность - {item.modifiers['aim']}", inline=False)
         embed.set_image(url=item.url)
-        await inter.edit_origin(embed=embed, components=[component.Button(style=component.ButtonStyle.blue, label="Купить", custom_id=c_id + "buy_2")])
+        await inter.edit_origin(embed=embed, components=[Button(style=ButtonStyle.blue, label="Купить", custom_id=c_id + "buy_2")])
         interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "buy_2" and i.user == ctx.author)
 
         cost = item.cost
@@ -259,16 +260,16 @@ class Shop(Cog):
         cp = "components"
         embed.description += f"\Компоненты: {', '.join([f'{fish_components[i].name} - {item[cp][i]}' for i in item[cp]])}\n"
         components=[[
-            component.Button(style=component.ButtonStyle.green, label="Продать", custom_id=c_id + "sell"),
-            component.Button(label="Разобрать", style=component.ButtonStyle.green, custom_id=c_id + "disa"),
-            component.Button(label="На рынок", style=component.ButtonStyle.green, custom_id=c_id + "market"),
-            component.Button(label="Отменить", style=component.ButtonStyle.green, custom_id=c_id + "r")]]
+            Button(style=ButtonStyle.green, label="Продать", custom_id=c_id + "sell"),
+            Button(label="Разобрать", style=ButtonStyle.green, custom_id=c_id + "disa"),
+            Button(label="На рынок", style=ButtonStyle.green, custom_id=c_id + "market"),
+            Button(label="Отменить", style=ButtonStyle.green, custom_id=c_id + "r")]]
         
         b = shop['business']
         for i in b:
             buss = BUSINESSES[i]
             if not buss.stock:
-                components[0].insert(-1, component.Button(label=buss.action_name, style=component.ButtonStyle.blue, custom_id=c_id + f"business{i}"))
+                components[0].insert(-1, Button(label=buss.action_name, style=ButtonStyle.blue, custom_id=c_id + f"business{i}"))
         
         await inter.edit_origin(embed=embed, components=components)
         interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "sell" or i.custom_id == c_id + "disa" or i.custom_id == c_id + "market" or i.custom_id == c_id + "r" or i.custom_id[:-1] == c_id + "business") and i.user == ctx.author)
@@ -318,10 +319,11 @@ class Shop(Cog):
         elif interaction.custom_id == c_id + "r":
             pass
         elif interaction.custom_id[:-1] == c_id + "business":
-            await db.update_user(ctx.guild.id, ctx.author.id, {'$unset': {f'finventory.cage.{response}': 1}})
-            await db.update_user(ctx.guild.id, ctx.author.id, {'$pull': {f'finventory.cage': None}})
             b = BUSINESSES[int(interaction.custom_id[-1])]
             e, state = await B.logic(b, ctx.guild.id, ctx.author.id, item['components'], item['cost'], user_components)
+            if state is SUCCESS:
+                await db.update_user(ctx.guild.id, ctx.author.id, {'$unset': {f'finventory.cage.{response}': 1}})
+                await db.update_user(ctx.guild.id, ctx.author.id, {'$pull': {f'finventory.cage': None}})
             embed=e
         else:
             await db.update_user(ctx.guild.id, ctx.author.id, {'$inc': {f'finventory.components.{i}': item['components'][i] for i in item['components']}, '$unset': {f'finventory.cage.{response}': 1}})
@@ -381,7 +383,7 @@ class Shop(Cog):
         if response < 10000:
             embed.add_field(name="Модификаторы", value=f"x {rod.modifiers['x']} к качеству рыбы\nТочность - {rod.modifiers['aim']}", inline=False)
         embed.set_image(url=rod.url)
-        await inter.edit_origin(embed=embed, components=[component.Button(style=component.ButtonStyle.blue, label="Собрать", custom_id=c_id + "buy_3")])
+        await inter.edit_origin(embed=embed, components=[Button(style=ButtonStyle.blue, label="Собрать", custom_id=c_id + "buy_3")])
         interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "buy_3" and i.user == ctx.author)
 
         finventory = await db.fetch_user(ctx.guild.id, ctx.author.id, finventory=1)
@@ -626,12 +628,12 @@ class Shop(Cog):
                     embed.add_field(name='Роли', value='нет', inline=False)
                 else:
                     embed.add_field(name='Роли', value=' '.join([role.mention for role in roles]), inline=False)
-                    components[0].append(component.Button(style=component.ButtonStyle.blue, label="Использовать", custom_id=c_id + "use5"))
-                components[0].append(component.Button(style=component.ButtonStyle.blue, label="Продать", custom_id=c_id + "sel5"))
+                    components[0].append(Button(style=ButtonStyle.blue, label="Использовать", custom_id=c_id + "use5"))
+                components[0].append(Button(style=ButtonStyle.blue, label="Продать", custom_id=c_id + "sel5"))
                 await inter.edit_origin(embed=embed, components=components)
             else:
                 embed.set_image(url=i['url'])
-                components[0].append(component.Button(style=component.ButtonStyle.blue, label="Использовать", custom_id=c_id + "use5"))
+                components[0].append(Button(style=ButtonStyle.blue, label="Использовать", custom_id=c_id + "use5"))
                 await inter.edit_origin(embed=embed, components=components)
             interaction = await self.Bot.wait_for("button_click", check = lambda i: i.user == ctx.author and (i.custom_id == c_id + "use5" or i.custom_id == c_id + "sel5"))
             
@@ -697,8 +699,8 @@ class Shop(Cog):
         
         embed = Embed(title='Рынок', color=Colour.dark_theme())
         
-        components = [[component.Button(label='Рыба', style=component.ButtonStyle.blue, custom_id=c_id + "ffishs"),
-                       component.Button(label='Удочки', style=component.ButtonStyle.blue, custom_id=c_id + "rrodss")]]
+        components = [[Button(label='Рыба', style=ButtonStyle.blue, custom_id=c_id + "ffishs"),
+                       Button(label='Удочки', style=ButtonStyle.blue, custom_id=c_id + "rrodss")]]
         op = await ctx.send(embed=embed, components=components)
         
         interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "ffishs" or i.custom_id == c_id + "rrodss") and i.user == ctx.author)
@@ -758,7 +760,7 @@ class Shop(Cog):
             embed.description += f"\Можно разобрать: {', '.join([f'{fish_components[i].name} - {item[cp][i]}' for i in item[cp]])}\n"
         embed.add_field(name='Описание', value=item['description'], inline=False)
         embed.set_image(url=item['url'])
-        await inter.edit_origin(embed=embed, components=[[component.Button(style=component.ButtonStyle.green, label="Купить", custom_id=c_id + "bbuy2")]])
+        await inter.edit_origin(embed=embed, components=[[Button(style=ButtonStyle.green, label="Купить", custom_id=c_id + "bbuy2")]])
         interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "bbuy2" and i.user == ctx.author)
 
         if ctx.author.id == item['seller']:
@@ -865,7 +867,7 @@ class Shop(Cog):
         embed.add_field(name='Описание', value=item.description, inline=False)
         embed.set_image(url=item.url)
         if item.name != "Бамбук":
-            await inter.edit_origin(embed=embed, components=[[component.Button(label="На рынок", style=component.ButtonStyle.green, custom_id=c_id + "market2"), component.Button(label="Отменить", style=component.ButtonStyle.green, custom_id=c_id + "r2")]])
+            await inter.edit_origin(embed=embed, components=[[Button(label="На рынок", style=ButtonStyle.green, custom_id=c_id + "market2"), Button(label="Отменить", style=ButtonStyle.green, custom_id=c_id + "r2")]])
             interaction = await self.Bot.wait_for("button_click", check = lambda i: (i.custom_id == c_id + "market2" or i.custom_id == c_id + "r2") and i.user == ctx.author)
             if interaction.custom_id == c_id + "market2":
                 embed = Embed(title="Введите желаемую цену", color=Colour.dark_theme())
@@ -947,7 +949,7 @@ class Shop(Cog):
         embed.description = "Инвентарь:\n" + ", ".join([f'{fish_components[i].name} - {fcomponents[i]}' for i in fcomponents])
         embed.add_field(name='Необходимые материалы', value=", ".join([f'{i[0].name} - {i[1]}' for i in b.cost]), inline=False)
         embed.add_field(name='Описание', value=b.description, inline=False)
-        await inter.edit_origin(embed=embed, components=[component.Button(style=component.ButtonStyle.blue, label="Собрать", custom_id=c_id + "buy_991")])
+        await inter.edit_origin(embed=embed, components=[Button(style=ButtonStyle.blue, label="Собрать", custom_id=c_id + "buy_991")])
         interaction = await self.Bot.wait_for("button_click", check = lambda i: i.custom_id == c_id + "buy_991" and i.user == ctx.author)
 
         finventory = await db.fetch_user(ctx.guild.id, ctx.author.id, finventory=1)

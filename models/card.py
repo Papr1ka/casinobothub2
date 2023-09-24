@@ -4,7 +4,6 @@
 
 from aiohttp import ClientSession as aioSession
 from io import BytesIO
-from models.user_model import UserModel
 from PIL import Image, ImageFont, ImageDraw
 
 
@@ -39,6 +38,9 @@ class Card():
                 color: str - цвет темы (dark | light)
                 avatar: str - ссылка на аватар пользователя
                 username: str - имя пользователя
+                exp: int - опыт пользователя
+                level: int - уровень пользователя
+                exp_to_next_level: int - опыт, необходимый для повышения уровня пользователя
         """
         self.data = user_data
         # цвет заднего фона
@@ -118,7 +120,7 @@ class Card():
         self.draw.text((320, 180), username, font=self.__main_font, fill=self.__text_color)
 
         # Отрисовка прогрес бара
-        exp, level, exp_to_level = UserModel.exp_to_level(self.data['exp'], self.data['level'])
+        exp, level, exp_to_level = self.data['exp'], self.data['level'], self.data['exp_to_next_level']
 
         await self.__render_progress_bar(int((exp / exp_to_level) * 100))
 
