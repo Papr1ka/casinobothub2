@@ -9,10 +9,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from math import ceil
 from time import time
 
-from .handlers import MailHandler
-from .models.user_model import UserModel
-from .models.shop import get_shop
-from .settings import MONGO_PASSWORD, DBL_TOKEN, DATABASE_URL_STRING, DATABASE_NAME, THREAD_SIZE, SHARD_COUNT
+from handlers import MailHandler
+from models.user_model import UserModel
+from models.shop import get_shop
+from settings import MONGO_PASSWORD, DBL_TOKEN, DATABASE_URL_STRING, DATABASE_NAME, THREAD_SIZE, SHARD_COUNT
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)
 logger = getLogger(__name__)

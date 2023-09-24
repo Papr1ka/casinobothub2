@@ -7,7 +7,7 @@ from logging import ERROR
 from logging import Formatter
 from os import environ
 
-from .settings import MAIL_PASS, MAIL_LOGIN
+from settings import MAIL_PASS, MAIL_LOGIN
 
 class simpleFormatter(Formatter):
     """

@@ -2,9 +2,10 @@
 Файл с инструментами для работы команды rulet
 """
 
-from handlers import MailHandler
-from random import choice
 from logging import config, getLogger
+from random import choice
+
+from handlers import MailHandler
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)
 logger = getLogger(__name__)

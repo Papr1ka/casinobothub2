@@ -1,3 +1,7 @@
+"""
+Файл, содержащий пагинатор для работы команд scoreboard, godboard
+"""
+
 from random import randint
 from typing import Any, Coroutine, Dict, Union
 from discord_components import (
@@ -28,42 +32,70 @@ class Paginator():
         id: int,
         forse: int,
         guild: Guild,
-        t=1,
+        t: int=1,
         timeout: Union[int, None]=None,
             ) -> None:
-        """Пагинатор Эмбедов на кнопках
+        """
+        Пагинатор Эмбедов на кнопках
 
-        Args:
-            client (DiscordComponents): ваш клиент
+        Отличается от пагинатора из модуля paginator тем, что в данной реализации поля Embed-ов формируются по нажатию кнопок и кэшируются
+        Причина: Пользователь на сервере из 100 пользователь захотел посмотреть топ 20 пользователей, следовательно остальные 80 останутся в тени
+        Бот не хранит имена пользователей гильдии, только id.
+        Для получения каждого отдельного имени пользователя необходимо отправить запрос в discord
+        Таким образом, вместо отправки 100 запросов будет отправлено лишь 20
+
+        Аргументы:
+            client (DiscordComponents): клиент DiscordComponents
             send_func (Coroutine): корутина отправки сообщения
             (channel.send | ctx.send | другое)
-            contents (List[Embed]): Список включённых в пагинатор эмбедов
+            contents (List[Embed]): список включённых в пагинатор эмбедов
             author_id (Any): идентификатор для проверки,
-            что именно вы нажали на кнопку
-            timeout (Union[int, None], optional):
-            через какое время после последнего взаимодействия
-            прекратить обслуживание Defaults to None
+            что именно пользователь, который вызвал команду нажал на кнопку
+            values (List[Any]): список данных, необходимых для формирования каждого элемента, используется упорядоченность
+            (Обычно - список словарей с данными о пользователе, см. приминение в get_current)
+            id (int): уникальный идентификатор пагинатора, используется для формирования custom_id компонентов (кнопок, селекта),
+            чтобы можно было разобрать поступающие от сервера interaction-ы и определить, к какой кнопке они относятся
+            forse (int): количество элементов на странице
+            guild (Guild): объект гильдии
+            t: int - тип пагинатора (1 - scoreboard, не 1 - godboard)
+            timeout (Union[int, None]): опционально
+            через какое время в секундах после последнего взаимодействия
+            прекратить обслуживание
         """
         self.__client = client
         self.__send = send_func
         self.__contents = contents
         self.__index = 0
         self.__timeout = timeout
+        # Количество embed-ов
         self.__length = len(contents)
         self.__author_id = author_id
         self.__values = values
         self.__id = str(id)
+        # Список кэшированных Embed-ов
         self.__prosessed = []
         self.guild = guild
         self.forse = forse
         self.type = t
+        # Функция проверки custom_id объекта Interaction на предмет отношения к данному объекту пагинатора
         self.check = lambda i: i.user.id == self.__author_id and i.custom_id.startswith(self.__id)
+        # Количество элементов на всех страницах
         self.__l = len(values)
 
     async def get_current(self):
+        """
+        Метод получения текущего наполнения embed-а
+        Если страница ещё не была отображена, будет запрощена информация от discord
+        Иначе будет возвращён кэшированный embed
+
+        Возвращает:
+            embed: Embed - готовый для отправки Embed, с полями, соответствующими текущему номеру страницы
+        """
         if len(self.__prosessed) - 1 >= self.__index:
+            # Embed уже кэширован
             return self.__prosessed[self.__index]
         else:
+            # нужно подготовить ещё не отображённый Embed
             embed = self.__contents[self.__index]
             embed.set_thumbnail(url=self.guild.icon_url)
             for i in range(self.__index * self.forse, min(self.__l, self.__index * self.forse + self.forse)):
@@ -80,7 +112,12 @@ class Paginator():
             return embed
 
     async def get_components(self):
-        current = await self.get_current()
+        """
+        Метод получения компонентов для embed-а
+
+        Возвращает:
+            List[component] - список компонентов
+        """
         return [[
             Button(style=ButtonStyle.blue, emoji="◀️", custom_id=self.__id + "l"),
             Button(
@@ -91,6 +128,13 @@ class Paginator():
         ]]
 
     async def send(self):
+        """
+        Главный метод пагинатора, формирует список задач, которые нужно асинхронно одновременно выполнять
+        и запускает их обработчик
+
+        Возвращает:
+            m: Message - объект отправленного пагинатора
+        """
         aws = [
             self.__send(
                 embed=await self.get_current(),
@@ -107,6 +151,9 @@ class Paginator():
                 return r
 
     async def __pagi_loop(self) -> None:
+        """
+        Цикл обработки пагинации
+        """
         while True:
             try:
                 interaction = await self.__client.wait_for(
@@ -124,6 +171,14 @@ class Paginator():
                     await self.__button_callback(interaction)
 
     async def __button_callback(self, inter: Interaction, retr=1):
+        """
+        Обработчик нажатия кнопок '<' и '>'
+        
+        Аргументы:
+            inter: Interaction - объект взаимодействия
+            retr: int - количество попыток повторной отправки ответа на взаимодействие (если сообщение не удалось найти с первой попытки)
+            по умолчанию - 1, считается оптимальным
+        """
         try:
             await inter.respond(
                 type=7,

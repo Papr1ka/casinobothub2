@@ -2,8 +2,9 @@
 Файл, описывающий класс для учёта ежеминутного количества сообщений, отправляемых всеми пользователями
 """
 
-from handlers import MailHandler
 from logging import config, getLogger
+
+from handlers import MailHandler
 
 config.fileConfig('./logging.ini', disable_existing_loggers=False)
 logger = getLogger(__name__)

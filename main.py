@@ -14,10 +14,10 @@ from logging import config, getLogger
 from math import ceil
 from time import time
 
-from .database import db
-from .discord_components import DiscordComponents, Button, ButtonStyle
-from .models.fishing import wshop
-from .settings import TOKEN, SHARD_COUNT
+from database import db
+from discord_components import DiscordComponents, Button, ButtonStyle
+from models.fishing import wshop
+from settings import TOKEN, SHARD_COUNT
 
 
 """
